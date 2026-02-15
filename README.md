@@ -153,15 +153,7 @@ The system generates structured ledger statements including:
 
 **Divyanshu Tomar**
 Backend Developer | Django | REST APIs | System Design
+Ongoing 
 
 ---
 
-If you want, I can also give:
-
-* 🔥 A minimal clean README
-* 💼 Resume-focused project description (for recruiters)
-* 🏢 Production-grade SaaS style README
-* 📷 Version with screenshot section
-* 📦 Requirements.txt template
-
-Tell me what level you want 🚀
