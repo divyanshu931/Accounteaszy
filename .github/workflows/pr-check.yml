@@ -3,25 +3,30 @@ name: PR Validation
 on:
   pull_request:
     branches:
-      - main   # change if needed
+      - main
 
 jobs:
   validate:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Branch Naming Check
+      # 1️⃣ Validate Branch Name
       - name: Validate Branch Name
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
           echo "Branch: $BRANCH_NAME"
+
+          if [[ "$BRANCH_NAME" == "development" ]]; then
+            echo "✅ Development branch allowed"
+            exit 0
+          fi
 
           if [[ ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9]+_.*$ ]]; then
             echo "❌ Branch must start with username_"
             exit 1
           fi
 
-      # 2️⃣ PR Title Check
+      # 2️⃣ Validate PR Title
       - name: Validate PR Title
         run: |
           TITLE="${{ github.event.pull_request.title }}"
@@ -35,38 +40,59 @@ jobs:
       # 3️⃣ Checkout Code
       - uses: actions/checkout@v3
 
-      # 4️⃣ Setup Python
+      # 4️⃣ Secret & URL Scan
+      - name: Scan for Secrets & URLs
+        run: |
+          echo "🔍 Scanning for secrets and URLs..."
+
+          # Block common secret patterns
+          if grep -R -E "(API_KEY|SECRET_KEY|PASSWORD|TOKEN|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)" .; then
+            echo "❌ Secret-like variable detected!"
+            exit 1
+          fi
+
+          # Block hardcoded URLs (http/https)
+          if grep -R -E "http://|https://" .; then
+            echo "❌ Hardcoded URL detected!"
+            exit 1
+          fi
+
+          echo "✅ No secrets or URLs detected."
+
+      # 5️⃣ Setup Python
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 5️⃣ Install Dependencies
+      # 6️⃣ Install Dependencies
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
           pip install flake8 black
 
-      # 6️⃣ Python Syntax Check
+      # 7️⃣ Python Syntax Check
       - name: Python Syntax Check
         run: |
           python -m py_compile $(git ls-files '*.py')
 
-      # 7️⃣ Lint Check (Flake8)
+      # 8️⃣ Lint Check
       - name: Run Flake8
         run: flake8 .
 
-      # 8️⃣ Code Formatting Check (Black)
+      # 9️⃣ Formatting Check
       - name: Check Formatting
         run: black --check .
 
-      # 9️⃣ Django Check
+      # 🔟 Django Check
       - name: Django System Check
         run: |
           if [ -f manage.py ]; then
             python manage.py check
           fi
 
-      # 🔟 Run Tests
+      # 1️⃣1️⃣ Run Tests
       - name: Run Tests
         run: |
           if [ -f manage.py ]; then
