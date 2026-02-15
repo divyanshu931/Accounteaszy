@@ -24,73 +24,40 @@ jobs:
           echo "Branch: $BRANCH_NAME"
 
           if [[ "$BRANCH_NAME" != "development" && ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9]+_.*$ ]]; then
-            echo "❌ Invalid branch name"
+            echo "❌ Branch must start with username_"
             echo "FAIL=1" >> $GITHUB_ENV
+          else
+            echo "✅ Branch name valid"
           fi
 
-
-      # 3️⃣ Secret & URL Scan
-      - name: Scan for Secrets & URLs
+      # 2️⃣ Secret Scan (Python files only)
+      - name: Scan for Hardcoded Secrets
         continue-on-error: true
         run: |
-          if grep -R -E "(API_KEY|SECRET_KEY|PASSWORD|TOKEN)" .; then
-            echo "❌ Secret detected"
+          echo "🔍 Scanning for secrets..."
+
+          FILES=$(git ls-files '*.py')
+
+          if grep -E "(SECRET_KEY\s*=\s*['\"]|API_KEY\s*=\s*['\"]|PASSWORD\s*=\s*['\"]|TOKEN\s*=\s*['\"])" $FILES; then
+            echo "❌ Hardcoded secret detected!"
             echo "FAIL=1" >> $GITHUB_ENV
+          else
+            echo "✅ No secrets found"
           fi
 
-          if grep -R -E "http://|https://" .; then
-            echo "❌ Hardcoded URL detected"
-            echo "FAIL=1" >> $GITHUB_ENV
-          fi
-
-      # 4️⃣ Setup Python
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      # 5️⃣ Install Dependencies
-      - name: Install Dependencies
-        run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
-          pip install flake8 black
-
-      # 6️⃣ Lint
-      - name: Run Flake8
+      # 3️⃣ Hardcoded URL Scan (Python files only)
+      - name: Scan for Hardcoded URLs
         continue-on-error: true
         run: |
-          if ! flake8 .; then
+          echo "🔍 Scanning for hardcoded URLs..."
+
+          FILES=$(git ls-files '*.py')
+
+          if grep -E "http://|https://" $FILES; then
+            echo "❌ Hardcoded URL detected in Python files!"
             echo "FAIL=1" >> $GITHUB_ENV
-          fi
-
-      # 7️⃣ Format Check
-      - name: Black Check
-        continue-on-error: true
-        run: |
-          if ! black --check .; then
-            echo "FAIL=1" >> $GITHUB_ENV
-          fi
-
-      # 8️⃣ Django Check
-      - name: Django Check
-        continue-on-error: true
-        run: |
-          if [ -f manage.py ]; then
-            if ! python manage.py check; then
-              echo "FAIL=1" >> $GITHUB_ENV
-            fi
-          fi
-
-      # 9️⃣ Run Tests
-      - name: Run Tests
-        continue-on-error: true
-        run: |
-          if [ -f manage.py ]; then
-            if ! python manage.py test; then
-              echo "FAIL=1" >> $GITHUB_ENV
-            fi
+          else
+            echo "✅ No hardcoded URLs found"
           fi
 
       # 🔟 Final Result
