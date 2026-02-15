@@ -1,0 +1,20 @@
+document.addEventListener("DOMContentLoaded", function () {
+
+    function calculateAmount() {
+        let qty = parseFloat(document.querySelector("#id_quantity")?.value) || 0;
+        let price = parseFloat(document.querySelector("#id_price_per_unit")?.value) || 0;
+
+        let amountField = document.querySelector("#id_amount");
+
+        if (amountField) {
+            amountField.value = (qty * price).toFixed(2);
+        }
+    }
+
+    document.body.addEventListener("input", function (e) {
+        if (e.target.id === "id_quantity" || e.target.id === "id_price_per_unit") {
+            calculateAmount();
+        }
+    });
+
+});

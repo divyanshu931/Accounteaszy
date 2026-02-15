@@ -1,0 +1,197 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+
+<style>
+    .ledger-container {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    .company-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .company-header h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .company-header p {
+        margin: 3px 0;
+        font-size: 14px;
+        color: #555;
+    }
+
+    .party-info {
+        background: #f9f9f9;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        line-height: 1.8;
+    }
+
+    .balance-positive {
+        color: green;
+        font-weight: bold;
+    }
+
+    .balance-negative {
+        color: red;
+        font-weight: bold;
+    }
+
+    .filter-box {
+        margin-bottom: 20px;
+        padding: 12px;
+        background: #f2f2f2;
+        border-radius: 6px;
+    }
+
+    .filter-box input,
+    .filter-box select {
+        padding: 5px;
+        margin-right: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #e6e6e6;
+        font-weight: bold;
+    }
+
+    th, td {
+        padding: 8px;
+        text-align: center;
+        border: 1px solid #ddd;
+    }
+
+    tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+
+    @media print {
+        .no-print {
+            display: none;
+        }
+    }
+</style>
+
+<div class="ledger-container">
+
+    <!-- ================= COMPANY HEADER ================= -->
+
+    <div class="company-header">
+        <h2>Bhavikha Plastic Pvt Ltd</h2>
+        <p>GST: 24ABCDE1234F1Z5</p>
+        <p>Jharoda Kalan, New Delhi, India</p>
+        <p>Ledger Statement</p>
+    </div>
+
+    <!-- ================= PARTY INFO ================= -->
+
+    <div class="party-info">
+        <strong>Party:</strong> {{ party.name }} <br>
+        <strong>Phone:</strong> {{ party.phone }} <br>
+        <strong>Opening Balance:</strong> {{ party.opening_balance }} <br>
+
+        <strong>Current Balance:</strong>
+        {% if party.credit_balance > 0 %}
+            <span class="balance-positive">
+                To Receive: {{ party.credit_balance }}
+            </span>
+        {% elif party.credit_balance < 0 %}
+            <span class="balance-negative">
+                To Pay: {{ party.credit_balance }}
+            </span>
+        {% else %}
+            Settled
+        {% endif %}
+    </div>
+
+    <!-- ================= FILTER SECTION ================= -->
+
+    <div class="filter-box no-print">
+        <form method="get">
+
+            Start:
+            <input type="date" name="start" value="{{ start_date }}">
+
+            End:
+            <input type="date" name="end" value="{{ end_date }}">
+
+            Month:
+            <select name="month">
+                <option value="">All</option>
+                {% for m in months %}
+                    <option value="{{ m }}" {% if month == m|stringformat:"s" %}selected{% endif %}>
+                        {{ m }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            Type:
+            <select name="type">
+                <option value="">All</option>
+                <option value="sale" {% if txn_type == "sale" %}selected{% endif %}>Sale</option>
+                <option value="purchase" {% if txn_type == "purchase" %}selected{% endif %}>Purchase</option>
+                <option value="receive" {% if txn_type == "receive" %}selected{% endif %}>Receive</option>
+                <option value="pay" {% if txn_type == "pay" %}selected{% endif %}>Pay</option>
+            </select>
+
+            <button type="submit">Apply</button>
+            <button type="submit" name="export" value="1">Download PDF</button>
+            <button type="button" onclick="window.print()">Print</button>
+
+        </form>
+    </div>
+
+    <!-- ================= LEDGER TABLE ================= -->
+
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Mode</th>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Running Balance</th>
+        </tr>
+
+        {% for entry in ledger %}
+        <tr>
+            <td>{{ entry.date|date:"d-m-Y" }}</td>
+            <td>{{ entry.type }}</td>
+            <td>{{ entry.mode }}</td>
+            <td>{{ entry.product }}</td>
+            <td>{{ entry.quantity }}</td>
+            <td>{{ entry.rate }}</td>
+            <td>{{ entry.amount }}</td>
+            <td>
+                {% if entry.balance > 0 %}
+                    <span class="balance-positive">
+                        {{ entry.balance }}
+                    </span>
+                {% elif entry.balance < 0 %}
+                    <span class="balance-negative">
+                        {{ entry.balance }}
+                    </span>
+                {% else %}
+                    0
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+{% endblock %}
