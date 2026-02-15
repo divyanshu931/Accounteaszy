@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+
+<h2>Bhavikha Plastic Pvt Ltd</h2>
+
+<h3>Product: {{ product.name }}</h3>
+
+<p>
+<strong>Till Now we deal with(Model):</strong> {{ product.quantity }} {{ product.unit }} <br>
+
+<strong>Current Stock:</strong> {{ calculated_stock }}
+</p>
+
+<hr>
+
+<table border="1" cellpadding="8" width="100%">
+<tr>
+    <th>Date</th>
+    <th>Type</th>
+    <th>Party</th>
+    <th>Mode</th>
+    <th>Qty In</th>
+    <th>Qty Out</th>
+    <th>Rate</th>
+    <th>Stock After</th>
+</tr>
+
+{% for entry in ledger %}
+<tr>
+    <td>{{ entry.date|date:"d-m-Y" }}</td>
+    <td>{{ entry.type }}</td>
+    <td>{{ entry.party }}</td>
+    <td>{{ entry.mode }}</td>
+    <td>{{ entry.qty_in }}</td>
+    <td>{{ entry.qty_out }}</td>
+    <td>{{ entry.rate }}</td>
+    <td><strong>{{ entry.stock }}</strong></td>
+</tr>
+{% endfor %}
+
+</table>
+
+{% endblock %}

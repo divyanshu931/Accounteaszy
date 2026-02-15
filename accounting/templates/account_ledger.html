@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+
+<h2>Bhavikha Plastic Pvt Ltd</h2>
+
+<h3>Account Ledger: {{ account.name }}</h3>
+
+<p>
+Opening Balance: {{ account.opening_balance }} <br>
+Current Balance: {{ account.balance }}
+</p>
+
+<hr>
+
+<table border="1" cellpadding="8" width="100%">
+<tr>
+    <th>Date</th>
+    <th>Type</th>
+    <th>Party</th>
+    <th>Debit</th>
+    <th>Credit</th>
+    <th>Balance</th>
+</tr>
+
+{% for entry in ledger %}
+<tr>
+    <td>{{ entry.date|date:"d-m-Y" }}</td>
+    <td>{{ entry.type }}</td>
+    <td>{{ entry.party }}</td>
+    <td>{{ entry.debit }}</td>
+    <td>{{ entry.credit }}</td>
+    <td><strong>{{ entry.balance }}</strong></td>
+</tr>
+{% endfor %}
+
+</table>
+
+{% endblock %}
