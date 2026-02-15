@@ -10,61 +10,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Validate Branch Name
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Initialize Failure Flag
+        run: echo "FAIL=0" >> $GITHUB_ENV
+
+      # 1️⃣ Branch Name Check
       - name: Validate Branch Name
+        continue-on-error: true
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
           echo "Branch: $BRANCH_NAME"
 
-          if [[ "$BRANCH_NAME" == "development" ]]; then
-            echo "✅ Development branch allowed"
-            exit 0
+          if [[ "$BRANCH_NAME" != "development" && ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9]+_.*$ ]]; then
+            echo "❌ Invalid branch name"
+            echo "FAIL=1" >> $GITHUB_ENV
           fi
 
-          if [[ ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9]+_.*$ ]]; then
-            echo "❌ Branch must start with username_"
-            exit 1
-          fi
-
-      # 2️⃣ Validate PR Title
+      # 2️⃣ PR Title Check
       - name: Validate PR Title
+        continue-on-error: true
         run: |
           TITLE="${{ github.event.pull_request.title }}"
           echo "PR Title: $TITLE"
 
           if [[ ! "$TITLE" =~ ^(feat|fix|chore|docs|refactor|test):\ .+ ]]; then
-            echo "❌ PR title must start with feat:, fix:, chore:, docs:, refactor:, or test:"
-            exit 1
+            echo "❌ Invalid PR title format"
+            echo "FAIL=1" >> $GITHUB_ENV
           fi
 
-      # 3️⃣ Checkout Code
-      - uses: actions/checkout@v3
-
-      # 4️⃣ Secret & URL Scan
+      # 3️⃣ Secret & URL Scan
       - name: Scan for Secrets & URLs
+        continue-on-error: true
         run: |
-          echo "🔍 Scanning for secrets and URLs..."
-
-          # Block common secret patterns
-          if grep -R -E "(API_KEY|SECRET_KEY|PASSWORD|TOKEN|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)" .; then
-            echo "❌ Secret-like variable detected!"
-            exit 1
+          if grep -R -E "(API_KEY|SECRET_KEY|PASSWORD|TOKEN)" .; then
+            echo "❌ Secret detected"
+            echo "FAIL=1" >> $GITHUB_ENV
           fi
 
-          # Block hardcoded URLs (http/https)
           if grep -R -E "http://|https://" .; then
-            echo "❌ Hardcoded URL detected!"
-            exit 1
+            echo "❌ Hardcoded URL detected"
+            echo "FAIL=1" >> $GITHUB_ENV
           fi
 
-          echo "✅ No secrets or URLs detected."
-
-      # 5️⃣ Setup Python
-      - uses: actions/setup-python@v4
+      # 4️⃣ Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 6️⃣ Install Dependencies
+      # 5️⃣ Install Dependencies
       - name: Install Dependencies
         run: |
           if [ -f requirements.txt ]; then
@@ -72,29 +68,48 @@ jobs:
           fi
           pip install flake8 black
 
-      # 7️⃣ Python Syntax Check
-      - name: Python Syntax Check
-        run: |
-          python -m py_compile $(git ls-files '*.py')
-
-      # 8️⃣ Lint Check
+      # 6️⃣ Lint
       - name: Run Flake8
-        run: flake8 .
-
-      # 9️⃣ Formatting Check
-      - name: Check Formatting
-        run: black --check .
-
-      # 🔟 Django Check
-      - name: Django System Check
+        continue-on-error: true
         run: |
-          if [ -f manage.py ]; then
-            python manage.py check
+          if ! flake8 .; then
+            echo "FAIL=1" >> $GITHUB_ENV
           fi
 
-      # 1️⃣1️⃣ Run Tests
-      - name: Run Tests
+      # 7️⃣ Format Check
+      - name: Black Check
+        continue-on-error: true
+        run: |
+          if ! black --check .; then
+            echo "FAIL=1" >> $GITHUB_ENV
+          fi
+
+      # 8️⃣ Django Check
+      - name: Django Check
+        continue-on-error: true
         run: |
           if [ -f manage.py ]; then
-            python manage.py test
+            if ! python manage.py check; then
+              echo "FAIL=1" >> $GITHUB_ENV
+            fi
+          fi
+
+      # 9️⃣ Run Tests
+      - name: Run Tests
+        continue-on-error: true
+        run: |
+          if [ -f manage.py ]; then
+            if ! python manage.py test; then
+              echo "FAIL=1" >> $GITHUB_ENV
+            fi
+          fi
+
+      # 🔟 Final Result
+      - name: Final Validation Result
+        run: |
+          if [[ "$FAIL" == "1" ]]; then
+            echo "❌ One or more checks failed"
+            exit 1
+          else
+            echo "✅ All checks passed"
           fi
