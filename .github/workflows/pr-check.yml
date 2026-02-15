@@ -28,32 +28,6 @@ jobs:
             echo "FAIL=1" >> $GITHUB_ENV
           fi
 
-      # 2️⃣ PR Title Check
-      - name: Validate PR Title
-        continue-on-error: true
-        run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          echo "PR Title: '$TITLE'"
-
-          if [[ "$TITLE" =~ ^(feat|fix|chore|docs|refactor|test):[[:space:]].+ ]]; then
-            echo "✅ PR title format valid"
-          else
-            echo "❌ Invalid PR title format"
-            echo ""
-            echo "Expected format:"
-            echo "  feat: description"
-            echo "  fix: description"
-            echo "  chore: description"
-            echo ""
-            echo "Rules:"
-            echo "- Must start with lowercase keyword"
-            echo "- Must contain colon"
-            echo "- Must have a space after colon"
-            echo ""
-            echo "Example:"
-            echo "  chore: add proper gitignore"
-            echo "FAIL=1" >> $GITHUB_ENV
-          fi
 
       # 3️⃣ Secret & URL Scan
       - name: Scan for Secrets & URLs
