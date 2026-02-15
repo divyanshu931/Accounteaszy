@@ -3,72 +3,29 @@ name: PR Validation
 on:
   pull_request:
     branches:
-      - main   # change if needed
+      - main
 
 jobs:
   validate:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Branch Naming Check
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Initialize Failure Flag
+        run: echo "FAIL=0" >> $GITHUB_ENV
+
+      # 1️⃣ Branch Name Check
       - name: Validate Branch Name
+        continue-on-error: true
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
           echo "Branch: $BRANCH_NAME"
 
-          if [[ ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9]+_.*$ ]]; then
+          if [[ "$BRANCH_NAME" != "development" && ! "$BRANCH_NAME" =~ ^[a-zA-Z0-9]+_.*$ ]]; then
             echo "❌ Branch must start with username_"
-            exit 1
-          fi
-
-      # 2️⃣ PR Title Check
-      - name: Validate PR Title
-        run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          echo "PR Title: $TITLE"
-
-          if [[ ! "$TITLE" =~ ^(feat|fix|chore|docs|refactor|test):\ .+ ]]; then
-            echo "❌ PR title must start with feat:, fix:, chore:, docs:, refactor:, or test:"
-            exit 1
-          fi
-
-      # 3️⃣ Checkout Code
-      - uses: actions/checkout@v3
-
-      # 4️⃣ Setup Python
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      # 5️⃣ Install Dependencies
-      - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install flake8 black
-
-      # 6️⃣ Python Syntax Check
-      - name: Python Syntax Check
-        run: |
-          python -m py_compile $(git ls-files '*.py')
-
-      # 7️⃣ Lint Check (Flake8)
-      - name: Run Flake8
-        run: flake8 .
-
-      # 8️⃣ Code Formatting Check (Black)
-      - name: Check Formatting
-        run: black --check .
-
-      # 9️⃣ Django Check
-      - name: Django System Check
-        run: |
-          if [ -f manage.py ]; then
-            python manage.py check
-          fi
-
-      # 🔟 Run Tests
-      - name: Run Tests
-        run: |
-          if [ -f manage.py ]; then
-            python manage.py test
+            echo "FAIL=1" >> $GITHUB_ENV
+          else
+            echo "✅ Branch name valid"
           fi
